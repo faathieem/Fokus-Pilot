@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fokus-Pilot</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f0f0; text-align: center; padding: 20px; }
+        #setup { display: block; }
+        #cockpit { display: none; background: #222; color: white; padding: 20px; height: 100vh; }
+        #timer { font-size: 48px; margin: 20px; }
+        #points { font-size: 24px; margin: 20px; }
+        #break { display: none; background: #e0f7fa; padding: 20px; height: 100vh; }
+        #report { display: none; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; }
+        .challenge { font-size: 24px; margin: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Fokus-Pilot: Mode Pilot Fokus untuk Pelajar SMA</h1>
+
+    <!-- Setup Section -->
+    <div id="setup">
+        <h2>Mulai Misi</h2>
+        <label>Misi: <select id="mission">
+            <option value="Menyelesaikan Bab Trigonometri">Menyelesaikan Bab Trigonometri (Kesulitan: 3/5)</option>
+            <option value="Belajar Fisika Dasar">Belajar Fisika Dasar (Kesulitan: 2/5)</option>
+            <option value="Membaca Novel">Membaca Novel (Kesulitan: 1/5)</option>
+        </select></label><br>
+        <label>Waktu Fokus (menit): <input type="number" id="focusTime" value="45" min="1"></label><br>
+        <label>Waktu Istirahat (menit): <input type="number" id="breakTime" value="10" min="1"></label><br>
+        <button id="startBtn">Mulai Misi</button>
+    </div>
+
+    <!-- Cockpit Section -->
+    <div id="cockpit">
+        <h2>Kokpit Minimalis</h2>
+        <div id="timer">00:00</div>
+        <div id="points">Poin Fokus: 0</div>
+        <p>Fokuslah! Jangan pindah tab, atau poin akan berkurang.</p>
+        <button id="fullscreenBtn">Aktifkan Mode Layar Penuh</button>
+    </div>
+
+    <!-- Break Section -->
+    <div id="break">
+        <h2>Micro-Break Challenge</h2>
+        <div class="challenge" id="challengeText">Tantangan: Lakukan peregangan leher selama 1 menit.</div>
+        <div id="breakTimer">00:00</div>
+        <button id="continueBtn" style="display:none;">Lanjutkan Misi</button>
+    </div>
+
+    <!-- Report Section -->
+    <div id="report">
+        <h2>Laporan Penerbangan</h2>
+        <p id="reportText"></p>
+        <button id="restartBtn">Mulai Misi Baru</button>
+    </div>
+
+    <audio id="alarm" src="alarm.mp3" preload="auto"></audio> <!-- Ganti dengan file audio alarm Anda -->
+
+    <script>
+        let focusTime, breakTime, timerInterval, breakInterval, points = 0, distractions = 0, mission;
+        let isFocusMode = false, isBreakMode = false;
+
+        document.getElementById('startBtn').addEventListener('click', startMission);
+        document.getElementById('fullscreenBtn').addEventListener('click', () => document.documentElement.requestFullscreen());
+        document.getElementById('continueBtn').addEventListener('click', continueMission);
+        document.getElementById('restartBtn').addEventListener('click', () => location.reload());
+
+        // Deteksi pindah tab (visibility change)
+        document.addEventListener('visibilitychange', () => {
+            if (isFocusMode && document.hidden) {
+                distractions++;
+                points = Math.max(0, points - 5); // Penalti 5 poin
+                document.getElementById('alarm').play(); // Alarm
+                alert('Turbulensi! Kembali ke kokpit atau poin berkurang.');
+                updatePoints();
+            }
+        });
+
+        function startMission() {
+            mission = document.getElementById('mission').value;
+            focusTime = parseInt(document.getElementById('focusTime').value) * 60;
+            breakTime = parseInt(document.getElementById('breakTime').value) * 60;
+            points = 0;
+            distractions = 0;
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('cockpit').style.display = 'block';
+            startFocusTimer();
+        }
+
+        function startFocusTimer() {
+            isFocusMode = true;
+            let timeLeft = focusTime;
+            updateTimer(timeLeft);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                points += 1; // 1 poin per menit (setiap 60 detik)
+                updateTimer(timeLeft);
+                updatePoints();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    isFocusMode = false;
+                    startBreak();
+                }
+            }, 1000);
+        }
+
+        function startBreak() {
+            document.getElementById('cockpit').style.display = 'none';
+            document.getElementById('break').style.display = 'block';
+            isBreakMode = true;
+            let timeLeft = breakTime;
+            updateBreakTimer(timeLeft);
+            // Tantangan acak
+            const challenges = [
+                '1 menit peregangan leher.',
+                '2 menit melihat keluar jendela.',
+                '3 menit meditasi suara alam (putar audio).'
+            ];
+            document.getElementById('challengeText').textContent = 'Tantangan: ' + challenges[Math.floor(Math.random() * challenges.length)];
+            breakInterval = setInterval(() => {
+                timeLeft--;
+                updateBreakTimer(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(breakInterval);
+                    document.getElementById('continueBtn').style.display = 'block';
+                }
+            }, 1000);
+        }
+
+        function continueMission() {
+            document.getElementById('break').style.display = 'none';
+            document.getElementById('report').style.display = 'block';
+            generateReport();
+        }
+
+        function generateReport() {
+            const totalTime = (focusTime / 60) + (breakTime / 60);
+            const accuracy = Math.max(0, 100 - (distractions * 10)); // Akurasi berdasarkan distraksi
+            let badge = 'Pilot Pemula';
+            if (points > 40) badge = 'Pilot Konsisten';
+            if (points > 80) badge = 'Penyelesai Berat';
+            document.getElementById('reportText').innerHTML = `
+                Misi: ${mission}<br>
+                Total Waktu: ${totalTime} menit<br>
+                Poin Fokus: ${points}<br>
+                Akurasi Fokus: ${accuracy}% (Distraksi: ${distractions}x)<br>
+                Lencana: ${badge}
+            `;
+        }
+
+        function updateTimer(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            document.getElementById('timer').textContent = ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')};
+        }
+
+        function updateBreakTimer(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            document.getElementById('breakTimer').textContent = ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')};
+        }
+
+        function updatePoints() {
+            document.getElementById('points').textContent = Poin Fokus: ${points};
+        }
+    </script>
+</body>
+</html>
