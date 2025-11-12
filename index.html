@@ -62,10 +62,11 @@
         let focusTime, breakTime, timerInterval, breakInterval, points = 0, distractions = 0, mission;
         let isFocusMode = false, isBreakMode = false;
 
-        document.getElementById('startBtn').addEventListener('click', startMission);
-        document.getElementById('fullscreenBtn').addEventListener('click', () => document.documentElement.requestFullscreen());
-        document.getElementById('continueBtn').addEventListener('click', continueMission);
-        document.getElementById('restartBtn').addEventListener('click', () => location.reload());
+        document.getElementById('startBtn').addEventListener('click', () => {
+    alert('Misi dimulai!'); // Test apakah klik bekerja
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('cockpit').style.display = 'block';
+});
 
         // Deteksi pindah tab (visibility change)
         document.addEventListener('visibilitychange', () => {
